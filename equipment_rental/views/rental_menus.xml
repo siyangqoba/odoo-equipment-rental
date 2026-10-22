@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_rental_root" name="Rental" web_icon="equipment_rental,static/description/icon.png"
+              groups="group_rental_user" sequence="45"/>
+
+    <menuitem id="menu_rental_orders_top" name="Rentals" parent="menu_rental_root" sequence="10"/>
+    <menuitem id="menu_rental_orders" name="Rental Orders" parent="menu_rental_orders_top"
+              action="action_rental_order" sequence="10"/>
+    <menuitem id="menu_rental_overdue" name="Overdue Returns" parent="menu_rental_orders_top"
+              action="action_rental_order_overdue" sequence="20"/>
+    <menuitem id="menu_rental_to_invoice" name="To Invoice" parent="menu_rental_orders_top"
+              action="action_rental_order_to_invoice" sequence="30"/>
+
+    <menuitem id="menu_rental_equipment" name="Equipment" parent="menu_rental_root"
+              action="action_rental_equipment" sequence="20"/>
+
+    <menuitem id="menu_rental_config" name="Configuration" parent="menu_rental_root"
+              groups="group_rental_manager" sequence="90"/>
+    <menuitem id="menu_rental_settings" name="Settings" parent="menu_rental_config"
+              action="action_rental_config" sequence="5"/>
+    <menuitem id="menu_rental_categories" name="Equipment Categories" parent="menu_rental_config"
+              action="action_rental_category" sequence="10"/>
+</odoo>

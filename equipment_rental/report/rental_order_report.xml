@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_rental_order" model="ir.actions.report">
+        <field name="name">Rental Agreement</field>
+        <field name="model">rental.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">equipment_rental.report_rental_order</field>
+        <field name="report_file">equipment_rental.report_rental_order</field>
+        <field name="print_report_name">'Rental Agreement - %s' % object.name</field>
+        <field name="binding_model_id" ref="model_rental_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_rental_order_document">
+        <t t-call="web.external_layout">
+            <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)"/>
+            <t t-set="address">
+                <div t-field="doc.partner_id" t-options='{"widget": "contact", "fields": ["address", "name", "phone", "email"], "no_marker": True}'/>
+            </t>
+            <div class="page">
+                <h2>Rental Agreement <span t-field="doc.name"/></h2>
+                <div class="row mt-4 mb-4">
+                    <div class="col-4"><strong>Pickup</strong><p t-field="doc.date_start"/></div>
+                    <div class="col-4"><strong>Planned Return</strong><p t-field="doc.date_end"/></div>
+                    <div class="col-4"><strong>Billable Days</strong><p t-field="doc.duration_days"/></div>
+                </div>
+                <table class="table table-sm o_main_table">
+                    <thead>
+                        <tr>
+                            <th>Equipment</th>
+                            <th class="text-end">Daily Rate</th>
+                            <th class="text-end">Days</th>
+                            <th class="text-end">Deposit</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="doc.line_ids" t-as="line">
+                            <td><span t-field="line.equipment_id"/>
+                                <div t-if="line.equipment_id.serial_number" class="text-muted small">
+                                    S/N <span t-field="line.equipment_id.serial_number"/>
+                                </div>
+                            </td>
+                            <td class="text-end"><span t-field="line.daily_rate"/></td>
+                            <td class="text-end"><span t-field="line.days"/></td>
+                            <td class="text-end"><span t-field="line.deposit"/></td>
+                            <td class="text-end"><span t-field="line.subtotal"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="row justify-content-end">
+                    <div class="col-5">
+                        <table class="table table-sm">
+                            <tr><td>Rental</td><td class="text-end"><span t-field="doc.amount_rental"/></td></tr>
+                            <tr t-if="doc.late_fee"><td>Late fee (<span t-field="doc.late_days"/> days)</td>
+                                <td class="text-end"><span t-field="doc.late_fee"/></td></tr>
+                            <tr class="fw-bold"><td>Total</td><td class="text-end"><span t-field="doc.amount_total"/></td></tr>
+                            <tr><td>Refundable deposit</td><td class="text-end"><span t-field="doc.deposit_total"/></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <h5 class="mt-4">Terms</h5>
+                <ol class="small">
+                    <li>Equipment remains the property of <span t-field="doc.company_id.name"/> at all times.</li>
+                    <li>Late returns are charged at <span t-esc="doc.company_id.rental_late_fee_percent"/>% of the daily rate per day,
+                        after a <span t-esc="doc.company_id.rental_grace_hours"/>-hour grace period.</li>
+                    <li>The deposit is refunded once the equipment is returned in the condition it was received.</li>
+                </ol>
+                <div class="row mt-5">
+                    <div class="col-6">Customer signature: ______________________</div>
+                    <div class="col-6">Date: ______________________</div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_rental_order">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="equipment_rental.report_rental_order_document" t-lang="doc.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+</odoo>

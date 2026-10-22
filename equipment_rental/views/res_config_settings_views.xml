@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_rental" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.rental</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Equipment Rental" string="Equipment Rental" name="equipment_rental"
+                     groups="equipment_rental.group_rental_manager">
+                    <block title="Late Returns" name="rental_late_returns">
+                        <setting string="Late Fee" help="Charged per late day as a % of each item's daily rate">
+                            <field name="rental_late_fee_percent" class="oe_inline"/> %
+                        </setting>
+                        <setting string="Grace Period" help="Returns within this window are not charged">
+                            <field name="rental_grace_hours" class="oe_inline"/> hours
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_rental_config" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'equipment_rental', 'bin_size': False}</field>
+    </record>
+</odoo>
