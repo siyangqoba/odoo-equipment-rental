@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cat_power_tools" model="rental.equipment.category"><field name="name">Power Tools</field></record>
+    <record id="cat_access" model="rental.equipment.category"><field name="name">Access &amp; Lifting</field></record>
+    <record id="cat_events" model="rental.equipment.category"><field name="name">Events &amp; AV</field></record>
+
+    <record id="eq_drill" model="rental.equipment">
+        <field name="name">Rotary Hammer Drill</field>
+        <field name="category_id" ref="cat_power_tools"/>
+        <field name="serial_number">RHD-2291</field>
+        <field name="daily_rate">350</field>
+        <field name="deposit">1000</field>
+    </record>
+    <record id="eq_grinder" model="rental.equipment">
+        <field name="name">230mm Angle Grinder</field>
+        <field name="category_id" ref="cat_power_tools"/>
+        <field name="serial_number">AG-5520</field>
+        <field name="daily_rate">180</field>
+        <field name="deposit">500</field>
+    </record>
+    <record id="eq_scaffold" model="rental.equipment">
+        <field name="name">Mobile Scaffold Tower 6m</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="serial_number">SCF-0091</field>
+        <field name="daily_rate">650</field>
+        <field name="deposit">3000</field>
+    </record>
+    <record id="eq_ladder" model="rental.equipment">
+        <field name="name">Extension Ladder 9m</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="serial_number">LAD-1180</field>
+        <field name="daily_rate">120</field>
+        <field name="deposit">400</field>
+    </record>
+    <record id="eq_pa" model="rental.equipment">
+        <field name="name">PA Sound System 2kW</field>
+        <field name="category_id" ref="cat_events"/>
+        <field name="serial_number">PA-7781</field>
+        <field name="daily_rate">900</field>
+        <field name="deposit">4000</field>
+    </record>
+    <record id="eq_projector" model="rental.equipment">
+        <field name="name">Projector 5000 Lumens</field>
+        <field name="category_id" ref="cat_events"/>
+        <field name="serial_number">PRJ-3307</field>
+        <field name="daily_rate">550</field>
+        <field name="deposit">2500</field>
+        <field name="state">maintenance</field>
+    </record>
+
+    <record id="order_demo_1" model="rental.order">
+        <field name="partner_id" ref="base.res_partner_2"/>
+        <field name="date_start" eval="(DateTime.now() + relativedelta(days=2)).strftime('%Y-%m-%d 08:00:00')"/>
+        <field name="date_end" eval="(DateTime.now() + relativedelta(days=5)).strftime('%Y-%m-%d 17:00:00')"/>
+        <field name="line_ids" eval="[(0, 0, {'equipment_id': ref('eq_scaffold')}), (0, 0, {'equipment_id': ref('eq_ladder')})]"/>
+    </record>
+    <function model="rental.order" name="action_confirm" eval="[[ref('order_demo_1')]]"/>
+
+    <record id="order_demo_2" model="rental.order">
+        <field name="partner_id" ref="base.res_partner_3"/>
+        <field name="date_start" eval="(DateTime.now() - relativedelta(days=4)).strftime('%Y-%m-%d 08:00:00')"/>
+        <field name="date_end" eval="(DateTime.now() - relativedelta(days=1)).strftime('%Y-%m-%d 17:00:00')"/>
+        <field name="line_ids" eval="[(0, 0, {'equipment_id': ref('eq_drill')})]"/>
+    </record>
+    <function model="rental.order" name="action_confirm" eval="[[ref('order_demo_2')]]"/>
+    <function model="rental.order" name="action_pickup" eval="[[ref('order_demo_2')]]"/>
+
+    <record id="order_demo_3" model="rental.order">
+        <field name="partner_id" ref="base.res_partner_4"/>
+        <field name="date_start" eval="(DateTime.now() + relativedelta(days=7)).strftime('%Y-%m-%d 09:00:00')"/>
+        <field name="date_end" eval="(DateTime.now() + relativedelta(days=8)).strftime('%Y-%m-%d 23:00:00')"/>
+        <field name="line_ids" eval="[(0, 0, {'equipment_id': ref('eq_pa')})]"/>
+    </record>
+</odoo>
