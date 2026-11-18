@@ -9,6 +9,8 @@
         <field name="category_id" ref="cat_power_tools"/>
         <field name="serial_number">RHD-2291</field>
         <field name="daily_rate">350</field>
+        <field name="weekly_rate">1500</field>
+        <field name="monthly_rate">4800</field>
         <field name="deposit">1000</field>
     </record>
     <record id="eq_grinder" model="rental.equipment">
@@ -16,6 +18,8 @@
         <field name="category_id" ref="cat_power_tools"/>
         <field name="serial_number">AG-5520</field>
         <field name="daily_rate">180</field>
+        <field name="weekly_rate">800</field>
+        <field name="monthly_rate">2500</field>
         <field name="deposit">500</field>
     </record>
     <record id="eq_scaffold" model="rental.equipment">
@@ -23,6 +27,8 @@
         <field name="category_id" ref="cat_access"/>
         <field name="serial_number">SCF-0091</field>
         <field name="daily_rate">650</field>
+        <field name="weekly_rate">3200</field>
+        <field name="monthly_rate">9500</field>
         <field name="deposit">3000</field>
     </record>
     <record id="eq_ladder" model="rental.equipment">
@@ -30,6 +36,8 @@
         <field name="category_id" ref="cat_access"/>
         <field name="serial_number">LAD-1180</field>
         <field name="daily_rate">120</field>
+        <field name="weekly_rate">550</field>
+        <field name="monthly_rate">1600</field>
         <field name="deposit">400</field>
     </record>
     <record id="eq_pa" model="rental.equipment">
@@ -37,6 +45,7 @@
         <field name="category_id" ref="cat_events"/>
         <field name="serial_number">PA-7781</field>
         <field name="daily_rate">900</field>
+        <field name="weekly_rate">4500</field>
         <field name="deposit">4000</field>
     </record>
     <record id="eq_projector" model="rental.equipment">
@@ -44,6 +53,7 @@
         <field name="category_id" ref="cat_events"/>
         <field name="serial_number">PRJ-3307</field>
         <field name="daily_rate">550</field>
+        <field name="weekly_rate">2800</field>
         <field name="deposit">2500</field>
         <field name="state">maintenance</field>
     </record>

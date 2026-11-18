@@ -38,6 +38,12 @@ class RentalEquipment(models.Model):
     )
     currency_id = fields.Many2one(related="company_id.currency_id")
     daily_rate = fields.Monetary(required=True, tracking=True)
+    weekly_rate = fields.Monetary(
+        tracking=True, help="Price for 7 days. Leave at 0 if you don't offer weekly hire."
+    )
+    monthly_rate = fields.Monetary(
+        tracking=True, help="Price for 30 days. Leave at 0 if you don't offer monthly hire."
+    )
     deposit = fields.Monetary(help="Refundable security deposit charged per rental.")
     state = fields.Selection(
         [
@@ -63,6 +69,11 @@ class RentalEquipment(models.Model):
     _sql_constraints = [
         ("serial_uniq", "unique(serial_number, company_id)", "Serial number must be unique."),
         ("rate_positive", "CHECK(daily_rate >= 0)", "Daily rate cannot be negative."),
+        (
+            "tier_rates_positive",
+            "CHECK(weekly_rate >= 0 AND monthly_rate >= 0)",
+            "Weekly and monthly rates cannot be negative.",
+        ),
     ]
 
     @api.model

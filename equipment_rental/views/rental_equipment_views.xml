@@ -57,6 +57,8 @@
                 <field name="serial_number" optional="hide"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="daily_rate"/>
+                <field name="weekly_rate" optional="show"/>
+                <field name="monthly_rate" optional="hide"/>
                 <field name="deposit" optional="show"/>
                 <field name="rental_count" optional="show"/>
                 <field name="total_revenue" sum="Revenue" optional="show"/>
@@ -112,6 +114,8 @@
                         <group>
                             <field name="currency_id" invisible="1"/>
                             <field name="daily_rate"/>
+                            <field name="weekly_rate"/>
+                            <field name="monthly_rate"/>
                             <field name="deposit"/>
                         </group>
                     </group>

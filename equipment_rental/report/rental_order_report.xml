@@ -30,6 +30,7 @@
                             <th>Equipment</th>
                             <th class="text-end">Daily Rate</th>
                             <th class="text-end">Days</th>
+                            <th>Priced As</th>
                             <th class="text-end">Deposit</th>
                             <th class="text-end">Subtotal</th>
                         </tr>
@@ -43,6 +44,7 @@
                             </td>
                             <td class="text-end"><span t-field="line.daily_rate"/></td>
                             <td class="text-end"><span t-field="line.days"/></td>
+                            <td><span t-field="line.pricing_note"/></td>
                             <td class="text-end"><span t-field="line.deposit"/></td>
                             <td class="text-end"><span t-field="line.subtotal"/></td>
                         </tr>

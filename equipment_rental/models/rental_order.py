@@ -4,6 +4,8 @@ from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .pricing import best_price
+
 ACTIVE_STATES = ("confirmed", "ongoing")
 
 
@@ -214,12 +216,13 @@ class RentalOrder(models.Model):
                 fields.Command.create(
                     {
                         "name": _(
-                            "%(equipment)s – %(days)s day(s) rental",
+                            "%(equipment)s – rental, %(days)s day(s) (%(pricing)s)",
                             equipment=line.equipment_id.display_name,
                             days=order.duration_days,
+                            pricing=line.pricing_note,
                         ),
-                        "quantity": order.duration_days,
-                        "price_unit": line.daily_rate,
+                        "quantity": 1,
+                        "price_unit": line.subtotal,
                         "tax_ids": [fields.Command.clear()],
                     }
                 )
@@ -304,19 +307,35 @@ class RentalOrderLine(models.Model):
     daily_rate = fields.Monetary(
         compute="_compute_rates", store=True, readonly=False, precompute=True
     )
+    weekly_rate = fields.Monetary(
+        compute="_compute_rates", store=True, readonly=False, precompute=True
+    )
+    monthly_rate = fields.Monetary(
+        compute="_compute_rates", store=True, readonly=False, precompute=True
+    )
     deposit = fields.Monetary(
         compute="_compute_rates", store=True, readonly=False, precompute=True
     )
     days = fields.Integer(string="Days", related="order_id.duration_days")
     subtotal = fields.Monetary(compute="_compute_subtotal", store=True)
+    pricing_note = fields.Char(
+        string="Priced As", compute="_compute_subtotal", store=True,
+        help="The cheapest combination of monthly, weekly and daily rates for this period.",
+    )
 
     @api.depends("equipment_id")
     def _compute_rates(self):
         for line in self:
             line.daily_rate = line.equipment_id.daily_rate
+            line.weekly_rate = line.equipment_id.weekly_rate
+            line.monthly_rate = line.equipment_id.monthly_rate
             line.deposit = line.equipment_id.deposit
 
-    @api.depends("daily_rate", "order_id.duration_days")
+    @api.depends("daily_rate", "weekly_rate", "monthly_rate", "order_id.duration_days")
     def _compute_subtotal(self):
         for line in self:
-            line.subtotal = line.daily_rate * line.order_id.duration_days
+            quote = best_price(
+                line.order_id.duration_days, line.daily_rate, line.weekly_rate, line.monthly_rate
+            )
+            line.subtotal = quote.amount
+            line.pricing_note = quote.breakdown
