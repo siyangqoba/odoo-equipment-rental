@@ -6,3 +6,5 @@ access_rental_equipment_manager,rental.equipment manager,model_rental_equipment,
 access_rental_order_user,rental.order user,model_rental_order,group_rental_user,1,1,1,0
 access_rental_order_manager,rental.order manager,model_rental_order,group_rental_manager,1,1,1,1
 access_rental_order_line_user,rental.order.line user,model_rental_order_line,group_rental_user,1,1,1,1
+access_rental_return_wizard_user,rental.return.wizard user,model_rental_return_wizard,group_rental_user,1,1,1,1
+access_rental_return_wizard_line_user,rental.return.wizard.line user,model_rental_return_wizard_line,group_rental_user,1,1,1,1

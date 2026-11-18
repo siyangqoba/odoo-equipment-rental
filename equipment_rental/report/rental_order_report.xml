@@ -57,16 +57,34 @@
                             <tr t-if="doc.late_fee"><td>Late fee (<span t-field="doc.late_days"/> days)</td>
                                 <td class="text-end"><span t-field="doc.late_fee"/></td></tr>
                             <tr class="fw-bold"><td>Total</td><td class="text-end"><span t-field="doc.amount_total"/></td></tr>
+                            <tr t-if="doc.damage_invoiced"><td>Damage not covered by deposit</td>
+                                <td class="text-end"><span t-field="doc.damage_invoiced"/></td></tr>
                             <tr><td>Refundable deposit</td><td class="text-end"><span t-field="doc.deposit_total"/></td></tr>
+                            <t t-if="doc.state in ('returned', 'invoiced')">
+                                <tr t-if="doc.deposit_retained"><td>Deposit applied to damage</td>
+                                    <td class="text-end">-<span t-field="doc.deposit_retained"/></td></tr>
+                                <tr class="fw-bold"><td>Deposit to refund</td><td class="text-end"><span t-field="doc.deposit_refund"/></td></tr>
+                            </t>
                         </table>
                     </div>
                 </div>
+                <t t-if="doc.state in ('returned', 'invoiced') and doc.line_ids.filtered(lambda l: l.return_condition and l.return_condition != 'good')">
+                    <h5 class="mt-4">Return Inspection</h5>
+                    <table class="table table-sm">
+                        <tr t-foreach="doc.line_ids.filtered(lambda l: l.return_condition and l.return_condition != 'good')" t-as="line">
+                            <td><span t-field="line.equipment_id"/></td>
+                            <td><span t-field="line.return_condition"/></td>
+                            <td><span t-field="line.damage_notes"/></td>
+                            <td class="text-end"><span t-field="line.damage_charge"/></td>
+                        </tr>
+                    </table>
+                </t>
                 <h5 class="mt-4">Terms</h5>
                 <ol class="small">
                     <li>Equipment remains the property of <span t-field="doc.company_id.name"/> at all times.</li>
                     <li>Late returns are charged at <span t-esc="doc.company_id.rental_late_fee_percent"/>% of the daily rate per day,
                         after a <span t-esc="doc.company_id.rental_grace_hours"/>-hour grace period.</li>
-                    <li>The deposit is refunded once the equipment is returned in the condition it was received.</li>
+                    <li>The deposit is refunded once the equipment is returned in the condition it was received. Damage charges are deducted from the deposit first; any amount above the deposit is invoiced.</li>
                 </ol>
                 <div class="row mt-5">
                     <div class="col-6">Customer signature: ______________________</div>

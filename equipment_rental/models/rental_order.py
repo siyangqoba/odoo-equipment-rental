@@ -56,6 +56,20 @@ class RentalOrder(models.Model):
     late_fee = fields.Monetary(readonly=True, copy=False, tracking=True)
     amount_total = fields.Monetary(string="Total", compute="_compute_amounts", store=True, tracking=True)
     deposit_total = fields.Monetary(compute="_compute_amounts", store=True)
+    damage_total = fields.Monetary(
+        string="Damage Charges", compute="_compute_amounts", store=True, tracking=True
+    )
+    deposit_retained = fields.Monetary(
+        compute="_compute_amounts", store=True,
+        help="Part of the deposit kept to cover damage charges.",
+    )
+    deposit_refund = fields.Monetary(
+        string="Deposit to Refund", compute="_compute_amounts", store=True
+    )
+    damage_invoiced = fields.Monetary(
+        string="Damage Not Covered by Deposit", compute="_compute_amounts", store=True,
+        help="Damage charges above the deposit. These are added to the invoice.",
+    )
     is_overdue = fields.Boolean(compute="_compute_is_overdue", search="_search_is_overdue")
     invoice_id = fields.Many2one("account.move", readonly=True, copy=False)
     return_notes = fields.Text()
@@ -79,12 +93,17 @@ class RentalOrder(models.Model):
             else:
                 order.duration_days = 0
 
-    @api.depends("line_ids.subtotal", "line_ids.deposit", "late_fee")
+    @api.depends("line_ids.subtotal", "line_ids.deposit", "line_ids.damage_charge", "late_fee")
     def _compute_amounts(self):
         for order in self:
             order.amount_rental = sum(order.line_ids.mapped("subtotal"))
             order.deposit_total = sum(order.line_ids.mapped("deposit"))
-            order.amount_total = order.amount_rental + order.late_fee
+            order.damage_total = sum(order.line_ids.mapped("damage_charge"))
+            # Damage is settled from the deposit first; only the excess is invoiced.
+            order.deposit_retained = min(order.damage_total, order.deposit_total)
+            order.deposit_refund = order.deposit_total - order.deposit_retained
+            order.damage_invoiced = order.damage_total - order.deposit_retained
+            order.amount_total = order.amount_rental + order.late_fee + order.damage_invoiced
 
     @api.depends("state", "date_end")
     def _compute_is_overdue(self):
@@ -178,7 +197,27 @@ class RentalOrder(models.Model):
             order.write({"state": "ongoing", "date_picked_up": fields.Datetime.now()})
         return True
 
-    def action_return(self, return_date=None):
+    def action_open_return_wizard(self):
+        self.ensure_one()
+        if self.state != "ongoing":
+            raise UserError(_("Only picked-up rentals can be returned."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Return %s", self.name),
+            "res_model": "rental.return.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_order_id": self.id},
+        }
+
+    def action_return(self, return_date=None, inspections=None, notes=None):
+        """Check equipment back in.
+
+        ``inspections`` maps order-line ids to dicts with any of: condition,
+        damage_charge, damage_notes, send_to_maintenance. Lines left out are
+        treated as returned in good condition.
+        """
+        inspections = inspections or {}
         for order in self:
             if order.state != "ongoing":
                 raise UserError(_("Only picked-up rentals can be returned."))
@@ -186,15 +225,41 @@ class RentalOrder(models.Model):
             late_days = order._compute_late_days(returned_at)
             pct = order.company_id.rental_late_fee_percent / 100.0
             late_fee = sum(line.daily_rate * late_days * pct for line in order.line_ids)
-            order.line_ids.equipment_id.write({"state": "available"})
-            order.write(
-                {
-                    "state": "returned",
-                    "date_returned": returned_at,
-                    "late_days": late_days,
-                    "late_fee": order.currency_id.round(late_fee),
-                }
-            )
+
+            to_maintenance = self.env["rental.equipment"]
+            for line in order.line_ids:
+                result = inspections.get(line.id, {})
+                condition = result.get("condition", "good")
+                charge = result.get("damage_charge", 0.0)
+                if charge < 0:
+                    raise UserError(_("Damage charges cannot be negative."))
+                line.write({
+                    "return_condition": condition,
+                    "damage_charge": charge,
+                    "damage_notes": result.get("damage_notes"),
+                })
+                if result.get("send_to_maintenance", condition != "good"):
+                    to_maintenance |= line.equipment_id
+            (order.line_ids.equipment_id - to_maintenance).write({"state": "available"})
+            to_maintenance.write({"state": "maintenance"})
+            for equipment in to_maintenance:
+                equipment.message_post(body=_(
+                    "Sent to maintenance after return of %(order)s (%(condition)s).",
+                    order=order.name,
+                    condition=dict(self.env["rental.order.line"]._fields["return_condition"].selection)[
+                        order.line_ids.filtered(lambda l: l.equipment_id == equipment).return_condition
+                    ],
+                ))
+
+            vals = {
+                "state": "returned",
+                "date_returned": returned_at,
+                "late_days": late_days,
+                "late_fee": order.currency_id.round(late_fee),
+            }
+            if notes:
+                vals["return_notes"] = notes
+            order.write(vals)
             order.activity_ids.filtered(
                 lambda a: a.activity_type_id == self.env.ref("mail.mail_activity_data_todo")
             ).action_feedback(feedback=_("Equipment returned."))
@@ -235,6 +300,21 @@ class RentalOrder(models.Model):
                             "name": _("Late return fee – %s day(s)", order.late_days),
                             "quantity": 1,
                             "price_unit": order.late_fee,
+                            "tax_ids": [fields.Command.clear()],
+                        }
+                    )
+                )
+            if order.damage_invoiced:
+                lines.append(
+                    fields.Command.create(
+                        {
+                            "name": _(
+                                "Damage charges not covered by deposit (total damage %(total)s, deposit applied %(deposit)s)",
+                                total=order.currency_id.format(order.damage_total),
+                                deposit=order.currency_id.format(order.deposit_retained),
+                            ),
+                            "quantity": 1,
+                            "price_unit": order.damage_invoiced,
                             "tax_ids": [fields.Command.clear()],
                         }
                     )
@@ -318,6 +398,12 @@ class RentalOrderLine(models.Model):
     )
     days = fields.Integer(string="Days", related="order_id.duration_days")
     subtotal = fields.Monetary(compute="_compute_subtotal", store=True)
+    return_condition = fields.Selection(
+        [("good", "Good"), ("minor", "Minor Damage"), ("major", "Major Damage")],
+        readonly=True, copy=False,
+    )
+    damage_charge = fields.Monetary(readonly=True, copy=False)
+    damage_notes = fields.Char(readonly=True, copy=False)
     pricing_note = fields.Char(
         string="Priced As", compute="_compute_subtotal", store=True,
         help="The cheapest combination of monthly, weekly and daily rates for this period.",

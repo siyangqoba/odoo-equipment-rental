@@ -30,7 +30,7 @@
                 <header>
                     <button name="action_confirm" type="object" string="Confirm" class="btn-primary" invisible="state != 'draft'"/>
                     <button name="action_pickup" type="object" string="Pick Up" class="btn-primary" invisible="state != 'confirmed'"/>
-                    <button name="action_return" type="object" string="Return" class="btn-primary" invisible="state != 'ongoing'"/>
+                    <button name="action_open_return_wizard" type="object" string="Return" class="btn-primary" invisible="state != 'ongoing'"/>
                     <button name="action_create_invoice" type="object" string="Create Invoice" class="btn-primary" invisible="state != 'returned'"/>
                     <button name="%(action_report_rental_order)d" type="action" string="Print Agreement" invisible="state in ('draft', 'cancelled')"/>
                     <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('draft', 'confirmed')"/>
@@ -76,6 +76,9 @@
                                     <field name="days"/>
                                     <field name="pricing_note"/>
                                     <field name="deposit"/>
+                                    <field name="return_condition" column_invisible="parent.state not in ('returned', 'invoiced')"/>
+                                    <field name="damage_charge" column_invisible="parent.state not in ('returned', 'invoiced')"/>
+                                    <field name="damage_notes" optional="hide" column_invisible="parent.state not in ('returned', 'invoiced')"/>
                                     <field name="subtotal"/>
                                 </tree>
                             </field>
@@ -84,8 +87,12 @@
                                 <field name="amount_rental"/>
                                 <field name="late_fee" invisible="not late_fee"/>
                                 <field name="late_days" invisible="not late_days"/>
+                                <field name="damage_invoiced" invisible="not damage_invoiced"/>
                                 <field name="amount_total" class="oe_subtotal_footer_separator"/>
-                                <field name="deposit_total" string="Refundable Deposit"/>
+                                <field name="deposit_total" string="Deposit Held"/>
+                                <field name="damage_total" invisible="not damage_total"/>
+                                <field name="deposit_retained" invisible="not deposit_retained"/>
+                                <field name="deposit_refund" invisible="state not in ('returned', 'invoiced')"/>
                             </group>
                         </page>
                         <page string="Notes" name="notes">
