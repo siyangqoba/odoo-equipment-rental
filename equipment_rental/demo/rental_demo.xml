@@ -11,6 +11,7 @@
         <field name="daily_rate">350</field>
         <field name="weekly_rate">1500</field>
         <field name="monthly_rate">4800</field>
+        <field name="service_interval_days">20</field>
         <field name="deposit">1000</field>
     </record>
     <record id="eq_grinder" model="rental.equipment">
@@ -20,6 +21,7 @@
         <field name="daily_rate">180</field>
         <field name="weekly_rate">800</field>
         <field name="monthly_rate">2500</field>
+        <field name="service_interval_days">15</field>
         <field name="deposit">500</field>
     </record>
     <record id="eq_scaffold" model="rental.equipment">
@@ -29,6 +31,7 @@
         <field name="daily_rate">650</field>
         <field name="weekly_rate">3200</field>
         <field name="monthly_rate">9500</field>
+        <field name="service_interval_days">60</field>
         <field name="deposit">3000</field>
     </record>
     <record id="eq_ladder" model="rental.equipment">
@@ -38,6 +41,7 @@
         <field name="daily_rate">120</field>
         <field name="weekly_rate">550</field>
         <field name="monthly_rate">1600</field>
+        <field name="service_interval_days">90</field>
         <field name="deposit">400</field>
     </record>
     <record id="eq_pa" model="rental.equipment">
@@ -46,6 +50,7 @@
         <field name="serial_number">PA-7781</field>
         <field name="daily_rate">900</field>
         <field name="weekly_rate">4500</field>
+        <field name="service_interval_days">30</field>
         <field name="deposit">4000</field>
     </record>
     <record id="eq_projector" model="rental.equipment">
@@ -54,8 +59,24 @@
         <field name="serial_number">PRJ-3307</field>
         <field name="daily_rate">550</field>
         <field name="weekly_rate">2800</field>
+        <field name="service_interval_days">45</field>
         <field name="deposit">2500</field>
         <field name="state">maintenance</field>
+    </record>
+
+    <record id="service_demo_scaffold" model="rental.equipment.service">
+        <field name="equipment_id" ref="eq_scaffold"/>
+        <field name="date" eval="(DateTime.today() - relativedelta(days=40)).strftime('%Y-%m-%d')"/>
+        <field name="service_type">inspection</field>
+        <field name="description">Annual scaffold inspection: braces, castors and locking pins</field>
+        <field name="cost">450</field>
+    </record>
+    <record id="service_demo_drill" model="rental.equipment.service">
+        <field name="equipment_id" ref="eq_drill"/>
+        <field name="date" eval="(DateTime.today() - relativedelta(days=12)).strftime('%Y-%m-%d')"/>
+        <field name="service_type">preventive</field>
+        <field name="description">Replaced carbon brushes, cleaned and greased chuck</field>
+        <field name="cost">380</field>
     </record>
 
     <record id="order_demo_1" model="rental.order">

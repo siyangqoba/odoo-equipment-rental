@@ -26,6 +26,7 @@ Equipment Rental Management
         "report/rental_order_report.xml",
         "wizard/rental_return_wizard_views.xml",
         "views/rental_equipment_views.xml",
+        "views/rental_equipment_service_views.xml",
         "views/rental_order_views.xml",
         "views/res_config_settings_views.xml",
         "views/rental_menus.xml",

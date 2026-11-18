@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class RentalEquipmentCategory(models.Model):
@@ -66,9 +66,24 @@ class RentalEquipment(models.Model):
         compute="_compute_rental_stats", string="Days Rented"
     )
 
+    # Preventive maintenance
+    service_interval_days = fields.Integer(
+        string="Service Every (rental days)",
+        help="Number of rental days between preventive services. 0 means no schedule.",
+    )
+    last_service_date = fields.Date(readonly=True, copy=False, tracking=True)
+    rental_days_since_service = fields.Integer(
+        compute="_compute_service_status", store=True, string="Rental Days Since Service"
+    )
+    service_due = fields.Boolean(compute="_compute_service_status", store=True)
+    service_ids = fields.One2many("rental.equipment.service", "equipment_id", string="Service Log")
+    service_count = fields.Integer(compute="_compute_service_count")
+    maintenance_cost = fields.Monetary(compute="_compute_service_count", string="Maintenance Cost")
+
     _sql_constraints = [
         ("serial_uniq", "unique(serial_number, company_id)", "Serial number must be unique."),
         ("rate_positive", "CHECK(daily_rate >= 0)", "Daily rate cannot be negative."),
+        ("interval_positive", "CHECK(service_interval_days >= 0)", "Service interval cannot be negative."),
         (
             "tier_rates_positive",
             "CHECK(weekly_rate >= 0 AND monthly_rate >= 0)",
@@ -97,6 +112,71 @@ class RentalEquipment(models.Model):
             equipment.rental_count = len(lines.order_id)
             equipment.total_revenue = sum(lines.mapped("subtotal"))
             equipment.utilisation_days = sum(lines.mapped("order_id.duration_days"))
+
+    @api.depends(
+        "service_interval_days",
+        "last_service_date",
+        "order_line_ids.order_id.state",
+        "order_line_ids.order_id.date_returned",
+        "order_line_ids.order_id.duration_days",
+    )
+    def _compute_service_status(self):
+        for equipment in self:
+            orders = equipment.order_line_ids.order_id.filtered(
+                lambda o: o.state in ("returned", "invoiced")
+                and o.date_returned
+                and (not equipment.last_service_date or o.date_returned.date() >= equipment.last_service_date)
+            )
+            days = sum(orders.mapped("duration_days"))
+            equipment.rental_days_since_service = days
+            equipment.service_due = bool(
+                equipment.service_interval_days and days >= equipment.service_interval_days
+            )
+
+    @api.depends("service_ids.cost")
+    def _compute_service_count(self):
+        for equipment in self:
+            equipment.service_count = len(equipment.service_ids)
+            equipment.maintenance_cost = sum(equipment.service_ids.mapped("cost"))
+
+    def _flag_if_service_due(self, responsible=None):
+        """Called after a return: equipment that has reached its interval goes to maintenance."""
+        due = self.filtered(lambda e: e.service_due and e.state == "available")
+        for equipment in due:
+            equipment.state = "maintenance"
+            equipment.message_post(body=_(
+                "Preventive service due: %(days)s rental days since last service (interval %(interval)s).",
+                days=equipment.rental_days_since_service,
+                interval=equipment.service_interval_days,
+            ))
+            equipment.activity_schedule(
+                "mail.mail_activity_data_todo",
+                summary="Service due",
+                user_id=(responsible or self.env.user).id,
+            )
+        return due
+
+    def action_log_service(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Log Service"),
+            "res_model": "rental.equipment.service",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_equipment_id": self.id},
+        }
+
+    def action_view_services(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Service Log: %s", self.name),
+            "res_model": "rental.equipment.service",
+            "view_mode": "tree,form",
+            "domain": [("equipment_id", "=", self.id)],
+            "context": {"default_equipment_id": self.id},
+        }
 
     def _compute_display_name(self):
         for equipment in self:

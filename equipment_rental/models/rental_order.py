@@ -260,6 +260,7 @@ class RentalOrder(models.Model):
             if notes:
                 vals["return_notes"] = notes
             order.write(vals)
+            order.line_ids.equipment_id._flag_if_service_due(order.user_id)
             order.activity_ids.filtered(
                 lambda a: a.activity_type_id == self.env.ref("mail.mail_activity_data_todo")
             ).action_feedback(feedback=_("Equipment returned."))

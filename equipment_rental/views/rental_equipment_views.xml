@@ -27,6 +27,7 @@
                 <field name="id"/>
                 <field name="state"/>
                 <field name="currency_id"/>
+                <field name="service_due"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click o_kanban_record_has_image_fill">
@@ -37,6 +38,7 @@
                                 <div class="text-muted"><field name="code"/> · <field name="category_id"/></div>
                                 <div><field name="daily_rate" widget="monetary"/> / day</div>
                                 <div class="text-muted small"><field name="rental_count"/> rentals</div>
+                                <span t-if="record.service_due.raw_value" class="badge text-bg-warning">Service due</span>
                             </div>
                         </div>
                     </t>
@@ -62,6 +64,8 @@
                 <field name="deposit" optional="show"/>
                 <field name="rental_count" optional="show"/>
                 <field name="total_revenue" sum="Revenue" optional="show"/>
+                <field name="rental_days_since_service" optional="hide"/>
+                <field name="service_due" optional="show" widget="boolean"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'available'"
                        decoration-info="state == 'rented'"
@@ -78,7 +82,11 @@
                 <header>
                     <button name="action_send_to_maintenance" type="object" string="Send to Maintenance"
                             invisible="state != 'available'" groups="equipment_rental.group_rental_manager"/>
-                    <button name="action_mark_available" type="object" string="Mark Available" class="btn-primary"
+                    <button name="action_log_service" type="object" string="Log Service"
+                            class="btn-primary" invisible="state != 'maintenance'"/>
+                    <button name="action_log_service" type="object" string="Log Service"
+                            invisible="state == 'maintenance' or not active"/>
+                    <button name="action_mark_available" type="object" string="Mark Available"
                             invisible="state != 'maintenance'" groups="equipment_rental.group_rental_manager"/>
                     <button name="action_retire" type="object" string="Retire"
                             invisible="state in ('rented', 'retired')" groups="equipment_rental.group_rental_manager"
@@ -93,11 +101,15 @@
                         <button class="oe_stat_button" icon="fa-money" disabled="1">
                             <field name="total_revenue" widget="statinfo" string="Revenue"/>
                         </button>
+                        <button name="action_view_services" type="object" class="oe_stat_button" icon="fa-wrench">
+                            <field name="service_count" widget="statinfo" string="Services"/>
+                        </button>
                         <button class="oe_stat_button" icon="fa-clock-o" disabled="1">
                             <field name="utilisation_days" widget="statinfo" string="Days Rented"/>
                         </button>
                     </div>
                     <widget name="web_ribbon" title="Retired" bg_color="text-bg-danger" invisible="active"/>
+                    <widget name="web_ribbon" title="Service Due" bg_color="text-bg-warning" invisible="not service_due or not active"/>
                     <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_1920'}"/>
                     <div class="oe_title">
                         <label for="name"/>
@@ -120,6 +132,29 @@
                         </group>
                     </group>
                     <notebook>
+                        <page string="Maintenance" name="maintenance">
+                            <group>
+                                <group>
+                                    <field name="service_interval_days"/>
+                                    <field name="last_service_date"/>
+                                </group>
+                                <group>
+                                    <field name="rental_days_since_service"/>
+                                    <field name="service_due"/>
+                                    <field name="maintenance_cost"/>
+                                </group>
+                            </group>
+                            <field name="service_ids" readonly="1">
+                                <tree>
+                                    <field name="date"/>
+                                    <field name="service_type"/>
+                                    <field name="description"/>
+                                    <field name="technician_id"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="cost"/>
+                                </tree>
+                            </field>
+                        </page>
                         <page string="Notes" name="notes">
                             <field name="notes" placeholder="Condition, accessories included, safety notes..."/>
                         </page>
@@ -144,6 +179,7 @@
                 <filter name="available" string="Available" domain="[('state', '=', 'available')]"/>
                 <filter name="rented" string="Rented Out" domain="[('state', '=', 'rented')]"/>
                 <filter name="maintenance" string="In Maintenance" domain="[('state', '=', 'maintenance')]"/>
+                <filter name="service_due" string="Service Due" domain="[('service_due', '=', True)]"/>
                 <separator/>
                 <filter name="archived" string="Retired" domain="[('active', '=', False)]"/>
                 <group expand="0" string="Group By">
