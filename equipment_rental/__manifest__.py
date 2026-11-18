@@ -1,14 +1,17 @@
 {
     "name": "Equipment Rental",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.1.0",
     "summary": "Rent out equipment: bookings, availability checks, late fees and invoicing",
     "description": """
 Equipment Rental Management
 
-* Equipment catalogue with categories, daily rates and deposits
+* Equipment catalogue with categories, daily/weekly/monthly rates and deposits
+* Cheapest-combination pricing across monthly, weekly and daily rates
 * Rental orders with a draft → confirmed → picked up → returned → invoiced workflow
 * Double-booking protection across overlapping rental periods
 * Automatic late fees based on a configurable company percentage
+* Return inspection with damage charges, settled from the deposit first
+* Preventive maintenance: service intervals, service log, automatic "service due" flags
 * One-click customer invoices
 * Daily scheduled action that flags overdue rentals and schedules follow-ups
 * Printable rental agreement (QWeb PDF)
